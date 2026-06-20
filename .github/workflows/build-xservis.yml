@@ -1,0 +1,45 @@
+name: Build Xservis APK
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Fix submodule to HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+          git submodule sync --recursive || true
+          git submodule update --init --recursive || true
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.5'
+          channel: 'stable'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: flutter pub get
+        run: flutter pub get
+      - name: code generation (build_runner)
+        run: dart run build_runner build --delete-conflicting-outputs || echo "gen warn"
+      - name: translations (slang)
+        run: dart run slang || echo "slang warn"
+      - name: download core (android-libs)
+        run: make android-libs || echo "core download warn"
+      - name: Build APK
+        run: flutter build apk --release --split-per-abi 2>&1 | tail -80
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: xservis-apk
+          path: build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: warn
