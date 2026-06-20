@@ -5,16 +5,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (БЕЗ субмодулей)
         uses: actions/checkout@v4
         with:
-          submodules: recursive
+          submodules: false
           fetch-depth: 0
-      - name: Fix submodule to HTTPS
+      - name: Клонирую субмодуль hiddify-core по HTTPS вручную
         run: |
           git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
-          git submodule sync --recursive || true
-          git submodule update --init --recursive || true
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          # читаю путь и url субмодуля, ставлю https
+          git submodule set-url hiddify-core https://github.com/hiddify/hiddify-core.git || true
+          git -c protocol.version=2 submodule update --init --recursive --depth 1 || \
+            git clone --depth 1 -b v3 https://github.com/hiddify/hiddify-core.git hiddify-core || true
+          ls -la hiddify-core | head -5
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -29,12 +33,12 @@ jobs:
         uses: android-actions/setup-android@v3
       - name: flutter pub get
         run: flutter pub get
-      - name: code generation (build_runner)
+      - name: code generation
         run: dart run build_runner build --delete-conflicting-outputs || echo "gen warn"
-      - name: translations (slang)
+      - name: translations
         run: dart run slang || echo "slang warn"
-      - name: download core (android-libs)
-        run: make android-libs || echo "core download warn"
+      - name: download core
+        run: make android-libs || echo "core warn"
       - name: Build APK
         run: flutter build apk --release --split-per-abi 2>&1 | tail -80
       - name: Upload APK
