@@ -5,45 +5,47 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (БЕЗ субмодулей)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: false
           fetch-depth: 0
-      - name: Клонирую субмодуль hiddify-core по HTTPS вручную
+      - name: Clone hiddify-core via HTTPS
         run: |
           git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
           git config --global url."https://github.com/".insteadOf "git@github.com:"
-          # читаю путь и url субмодуля, ставлю https
           git submodule set-url hiddify-core https://github.com/hiddify/hiddify-core.git || true
           git -c protocol.version=2 submodule update --init --recursive --depth 1 || \
             git clone --depth 1 -b v3 https://github.com/hiddify/hiddify-core.git hiddify-core || true
-          ls -la hiddify-core | head -5
       - name: Setup Java
         uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
+        with: { distribution: 'zulu', java-version: '17' }
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.38.5'
-          channel: 'stable'
+        with: { flutter-version: '3.38.5', channel: 'stable' }
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
       - name: flutter pub get
         run: flutter pub get
       - name: code generation
-        run: dart run build_runner build --delete-conflicting-outputs || echo "gen warn"
+        run: dart run build_runner build --delete-conflicting-outputs || echo gen warn
       - name: translations
-        run: dart run slang || echo "slang warn"
+        run: dart run slang || echo slang warn
       - name: download core
-        run: make android-libs || echo "core warn"
+        run: make android-libs || echo core warn
       - name: Build APK
-        run: flutter build apk --release --split-per-abi 2>&1 | tail -80
+        run: flutter build apk --release --split-per-abi
+      - name: List APK files
+        run: |
+          echo "=== Где APK ==="
+          find . -name "*.apk" -type f 2>/dev/null
+          ls -la build/app/outputs/flutter-apk/ 2>/dev/null || echo "нет flutter-apk dir"
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: xservis-apk
-          path: build/app/outputs/flutter-apk/*.apk
-          if-no-files-found: warn
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
