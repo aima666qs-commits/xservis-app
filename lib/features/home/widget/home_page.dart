@@ -72,17 +72,16 @@ class HomePage extends HookConsumerWidget {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: const AssetImage('assets/images/world_map.png'), // Replace with your image path
-            fit: BoxFit.cover,
-            opacity: 0.09,
-            colorFilter: theme.brightness == Brightness.dark
-                ? ColorFilter.mode(Colors.white.withValues(alpha: .15), BlendMode.srcIn) //
-                : ColorFilter.mode(
-                    Colors.grey.withValues(alpha: 1),
-                    BlendMode.srcATop,
-                  ), // Apply white tint in dark mode
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment(0, -0.35),
+            radius: 1.1,
+            colors: [
+              Color(0xFF0E2A28),
+              Color(0xFF0A0C0E),
+              Color(0xFF050607),
+            ],
+            stops: [0.0, 0.55, 1.0],
           ),
         ),
         child: Stack(
