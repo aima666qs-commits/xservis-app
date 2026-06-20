@@ -9,7 +9,7 @@ class AppTheme {
   final String fontFamily;
 
   ThemeData lightTheme(ColorScheme? lightColorScheme) {
-    final ColorScheme scheme = lightColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF293CA0));
+    final ColorScheme scheme = lightColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF14B8A6));
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
@@ -20,7 +20,7 @@ class AppTheme {
 
   ThemeData darkTheme(ColorScheme? darkColorScheme) {
     final ColorScheme scheme =
-        darkColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF293CA0), brightness: Brightness.dark);
+        darkColorScheme ?? ColorScheme.fromSeed(seedColor: const Color(0xFF14B8A6), brightness: Brightness.dark);
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
