@@ -1,73 +1,35 @@
-import 'package:flutter/foundation.dart';
-import 'package:hiddify/core/analytics/analytics_filter.dart';
-import 'package:hiddify/core/analytics/analytics_logger.dart';
-
-import 'package:hiddify/core/logger/logger_controller.dart';
-import 'package:hiddify/core/model/environment.dart';
 import 'package:hiddify/core/preferences/preferences_provider.dart';
-import 'package:hiddify/utils/custom_loggers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 part 'analytics_controller.g.dart';
 
-const String enableAnalyticsPrefKey = "enable_analytics";
+const String enableAnalyticsPrefKey = 'enable_analytics';
 
-bool _testCrashReport = false;
-
+/// AIMA privacy policy: product analytics and remote crash reporting are
+/// disabled. Diagnostics remain local on the device and can be exported by the
+/// user manually from the logs screen.
 @Riverpod(keepAlive: true)
-class AnalyticsController extends _$AnalyticsController with AppLogger {
+class AnalyticsController extends _$AnalyticsController {
   @override
   Future<bool> build() async {
-    return _preferences.getBool(enableAnalyticsPrefKey) ?? true;
+    if (_preferences.getBool(enableAnalyticsPrefKey) != false) {
+      await _preferences.setBool(enableAnalyticsPrefKey, false);
+    }
+    return false;
   }
 
-  SharedPreferences get _preferences => ref.read(sharedPreferencesProvider).requireValue;
+  SharedPreferences get _preferences =>
+      ref.read(sharedPreferencesProvider).requireValue;
 
   Future<void> enableAnalytics() async {
-    if (state case AsyncData(value: final enabled)) {
-      loggy.debug("enabling analytics");
-      state = const AsyncLoading();
-      if (!enabled) {
-        await _preferences.setBool(enableAnalyticsPrefKey, true);
-      }
-
-      // final env = ref.read(environmentProvider);
-      // final appInfo = await ref.read(appInfoProvider.future);
-      final dsn = !kDebugMode || _testCrashReport ? Environment.sentryDSN : "";
-      final sentryLogger = SentryLoggyIntegration();
-      LoggerController.instance.addPrinter("analytics", sentryLogger);
-
-      await SentryFlutter.init((options) {
-        options.dsn = dsn;
-        // options.environment = env.name;
-        // options.dist = appInfo.release.name;
-        options.debug = kDebugMode;
-        options.enableNativeCrashHandling = true;
-        options.enableNdkScopeSync = true;
-        // options.autoAppStart = false;
-        // options.attachScreenshot = true;
-        options.serverName = "";
-        options.attachThreads = true;
-        options.tracesSampleRate = 0.20;
-        options.enableUserInteractionTracing = true;
-        options.addIntegration(sentryLogger);
-        options.beforeSend = sentryBeforeSend;
-      });
-
-      state = const AsyncData(true);
-    }
+    // Intentionally disabled in AIMA builds. Do not initialize a remote SDK.
+    await _preferences.setBool(enableAnalyticsPrefKey, false);
+    state = const AsyncData(false);
   }
 
   Future<void> disableAnalytics() async {
-    if (state case AsyncData()) {
-      loggy.debug("disabling analytics");
-      state = const AsyncLoading();
-      await _preferences.setBool(enableAnalyticsPrefKey, false);
-      await Sentry.close();
-      LoggerController.instance.removePrinter("analytics");
-      state = const AsyncData(false);
-    }
+    await _preferences.setBool(enableAnalyticsPrefKey, false);
+    state = const AsyncData(false);
   }
 }
