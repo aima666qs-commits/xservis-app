@@ -8,7 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 ///
 /// No identifiers, phone numbers, SIM details, cell IDs, IP addresses or
 /// browsing data are collected. The channel only returns coarse connectivity
-/// state required to explain why the tunnel is reconnecting.
+/// state required to explain why the connection is reconnecting.
 class AimaNetworkSnapshot {
   const AimaNetworkSnapshot({
     required this.supported,
@@ -51,7 +51,7 @@ class AimaNetworkSnapshot {
         'cellular' when radioGeneration != 'unknown' => radioGeneration,
         'cellular' => 'Мобильная сеть',
         'ethernet' => 'Ethernet',
-        'vpn' => 'VPN',
+        'vpn' => 'Системное соединение',
         'none' => 'Нет сети',
         _ => 'Сеть не определена',
       };
