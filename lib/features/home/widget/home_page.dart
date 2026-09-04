@@ -1,4 +1,3 @@
-import 'package:dartx/dartx.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:hiddify/core/app_info/app_info_provider.dart';
@@ -9,25 +8,24 @@ import 'package:hiddify/features/connection/notifier/connection_notifier.dart';
 import 'package:hiddify/features/diagnostics/aima_network_diagnostics.dart';
 import 'package:hiddify/features/home/widget/aima_matrix_background.dart';
 import 'package:hiddify/features/home/widget/connection_button.dart';
+import 'package:hiddify/features/profile/model/profile_entity.dart';
 import 'package:hiddify/features/profile/notifier/active_profile_notifier.dart';
-import 'package:hiddify/features/profile/widget/profile_tile.dart';
-import 'package:hiddify/features/proxy/active/active_proxy_card.dart';
 import 'package:hiddify/features/proxy/active/active_proxy_delay_indicator.dart';
 import 'package:hiddify/gen/assets.gen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends HookConsumerWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final t = ref.watch(translationsProvider).requireValue;
     final activeProfile = ref.watch(activeProfileProvider);
     final connection = ref.watch(connectionNotifierProvider);
     final network = ref.watch(aimaNetworkDiagnosticsProvider).valueOrNull ??
         const AimaNetworkSnapshot.unsupported();
-
     final status = _AimaStatusViewModel.from(connection, network);
 
     return Scaffold(
@@ -40,21 +38,12 @@ class HomePage extends HookConsumerWidget {
           children: [
             Assets.images.logo.svg(height: 24),
             const Gap(8),
-            Text.rich(
-              TextSpan(
-                children: [
-                  const TextSpan(
-                    text: 'AIMA VPN',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                  const TextSpan(text: '  '),
-                  WidgetSpan(
-                    child: AppVersionLabel(),
-                    alignment: PlaceholderAlignment.middle,
-                  ),
-                ],
-              ),
+            const Text(
+              'Xservis',
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
+            const Gap(8),
+            const AppVersionLabel(),
           ],
         ),
         actions: [
@@ -64,6 +53,7 @@ class HomePage extends HookConsumerWidget {
             key: const ValueKey('profile_add_button'),
             label: t.pages.profiles.add,
             child: IconButton(
+              tooltip: 'Добавить подписку',
               icon: const Icon(Icons.add_rounded, color: Color(0xFF41F2A1)),
               onPressed: () =>
                   ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile(),
@@ -82,21 +72,13 @@ class HomePage extends HookConsumerWidget {
                 physics: const BouncingScrollPhysics(),
                 slivers: [
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
+                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 96),
                     sliver: SliverList.list(
                       children: [
                         _AimaHeroStatus(status: status, network: network),
                         const Gap(14),
-                        switch (activeProfile) {
-                          AsyncData(value: final profile?) => ProfileTile(
-                              profile: profile,
-                              isMain: true,
-                              margin: EdgeInsets.zero,
-                              color: const Color(0xB30B1714),
-                            ),
-                          _ => const _NoProfileCard(),
-                        },
-                        const Gap(26),
+                        _SubscriptionCard(activeProfile: activeProfile),
+                        const Gap(24),
                         Center(
                           child: Column(
                             children: [
@@ -109,8 +91,7 @@ class HomePage extends HookConsumerWidget {
                           ),
                         ),
                         const Gap(22),
-                        const ActiveProxyFooter(),
-                        const Gap(40),
+                        _AccountActions(activeProfile: activeProfile),
                       ],
                     ),
                   ),
@@ -132,7 +113,7 @@ class HomePage extends HookConsumerWidget {
                   .read(bottomSheetsNotifierProvider.notifier)
                   .showQuickSettings(),
               icon: const Icon(Icons.tune_rounded, size: 18),
-              label: const Text('Режим и маршрут'),
+              label: const Text('Настройки'),
             )
           : null,
     );
@@ -220,19 +201,256 @@ class _AimaHeroStatus extends StatelessWidget {
             children: [
               _FactChip(
                 icon: Icons.network_cell_rounded,
-                text: network.supported ? network.transportLabel : 'Сеть: не проверено',
+                text: _networkLabel(network),
               ),
               _FactChip(
-                icon: Icons.shield_outlined,
-                text: status.tunnelLabel,
+                icon: Icons.auto_awesome_rounded,
+                text: status.accessLabel,
               ),
-              _FactChip(
-                icon: Icons.visibility_off_outlined,
-                text: 'Телеметрия: выкл.',
+              const _FactChip(
+                icon: Icons.tune_rounded,
+                text: 'Автонастройка',
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  static String _networkLabel(AimaNetworkSnapshot network) {
+    if (!network.supported) return 'Сеть';
+    return switch (network.transport) {
+      'wifi' => 'Wi-Fi',
+      'cellular' when network.radioGeneration != 'unknown' => network.radioGeneration,
+      'cellular' => 'Мобильная сеть',
+      'ethernet' => 'Ethernet',
+      'none' => 'Нет сети',
+      _ => 'Сеть',
+    };
+  }
+}
+
+class _SubscriptionCard extends StatelessWidget {
+  const _SubscriptionCard({required this.activeProfile});
+
+  final AsyncValue<ProfileEntity?> activeProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (activeProfile) {
+      AsyncData(value: final profile?) => _buildProfileCard(context, profile),
+      AsyncError() => _buildEmptyCard(
+          context,
+          title: 'Подписка недоступна',
+          subtitle: 'Обновите данные или добавьте подписку ещё раз.',
+          tone: const Color(0xFFFF6B77),
+        ),
+      _ => _buildEmptyCard(
+          context,
+          title: 'Персональная подписка',
+          subtitle: 'Добавьте её один раз — дальше всё обновляется автоматически.',
+          tone: const Color(0xFF41F2A1),
+        ),
+    };
+  }
+
+  Widget _buildProfileCard(BuildContext context, ProfileEntity profile) {
+    final info = switch (profile) {
+      RemoteProfileEntity(:final subInfo) => subInfo,
+      _ => null,
+    };
+    final expired = info?.isExpired ?? false;
+    final tone = expired ? const Color(0xFFFF6B77) : const Color(0xFF41F2A1);
+    final remaining = info == null
+        ? 'Активна'
+        : expired
+            ? 'Срок закончился'
+            : _remainingLabel(info.remaining);
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xD90A1512),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tone.withValues(alpha: .42)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.workspace_premium_rounded, color: tone, size: 28),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  profile.name.isEmpty ? 'Персональная подписка' : profile.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  remaining,
+                  style: TextStyle(
+                    color: tone,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required Color tone,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xB30B1714),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: tone.withValues(alpha: .35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.key_rounded, color: tone),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const Gap(3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Color(0xFF9EC2B4), height: 1.35),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _remainingLabel(Duration value) {
+    if (value.inDays >= 1) return 'Осталось ${value.inDays} дн.';
+    if (value.inHours >= 1) return 'Осталось ${value.inHours} ч';
+    final minutes = value.inMinutes.clamp(0, 59);
+    return 'Осталось $minutes мин';
+  }
+}
+
+class _AccountActions extends StatelessWidget {
+  const _AccountActions({required this.activeProfile});
+
+  final AsyncValue<ProfileEntity?> activeProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = activeProfile.valueOrNull;
+    final info = switch (profile) {
+      RemoteProfileEntity(:final subInfo) => subInfo,
+      _ => null,
+    };
+    final accountUrl = info?.webPageUrl;
+    final supportUrl = info?.supportUrl;
+    final shareUrl = accountUrl ?? 'https://xservis.app';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xB30B1714),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0x3300FF9D)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.payments_outlined,
+                  label: 'Тарифы и оплата',
+                  onTap: accountUrl == null ? null : () => _open(accountUrl),
+                ),
+              ),
+              const Gap(8),
+              Expanded(
+                child: _ActionButton(
+                  icon: Icons.ios_share_rounded,
+                  label: 'Пригласить',
+                  onTap: () => Share.share('Xservis — $shareUrl'),
+                ),
+              ),
+            ],
+          ),
+          if (supportUrl != null) ...[
+            const Gap(8),
+            SizedBox(
+              width: double.infinity,
+              child: _ActionButton(
+                icon: Icons.support_agent_rounded,
+                label: 'Поддержка',
+                onTap: () => _open(supportUrl),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static Future<void> _open(String raw) async {
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.tonalIcon(
+      style: FilledButton.styleFrom(
+        minimumSize: const Size(0, 48),
+        backgroundColor: const Color(0xE611211C),
+        foregroundColor: const Color(0xFFB8F8DA),
+      ),
+      onPressed: onTap,
+      icon: Icon(icon, size: 18),
+      label: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -247,51 +465,23 @@ class _NetworkFacts extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!network.supported) {
       return const Text(
-        'Диагностика сети недоступна на этой платформе',
+        'Проверка сети недоступна на этой платформе',
         style: TextStyle(color: Color(0xFF76998C), fontSize: 12),
       );
     }
 
     final message = switch ((network.hasNetwork, network.validated, network.captivePortal)) {
       (false, _, _) => 'Сигнал или интернет отсутствует',
-      (true, _, true) => 'Требуется вход в сеть Wi-Fi',
-      (true, false, false) => 'Сеть есть, интернет не подтверждён',
-      _ when network.networkChanged => 'Сеть изменилась — проверяем туннель',
-      _ => 'Интернет подтверждён системой',
+      (true, _, true) => 'Требуется вход в Wi-Fi',
+      (true, false, false) => 'Сеть есть, интернет ещё не подтверждён',
+      _ when network.networkChanged => 'Сеть изменилась — соединение обновляется',
+      _ => 'Интернет доступен',
     };
 
     return Text(
       message,
       textAlign: TextAlign.center,
       style: const TextStyle(color: Color(0xFF9EC2B4), fontSize: 12),
-    );
-  }
-}
-
-class _NoProfileCard extends StatelessWidget {
-  const _NoProfileCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xB30B1714),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x4400FF9D)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.key_rounded, color: Color(0xFF41F2A1)),
-          Gap(12),
-          Expanded(
-            child: Text(
-              'Добавьте персональную подписку — после этого подключение работает одной кнопкой.',
-              style: TextStyle(color: Colors.white, height: 1.4),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -361,14 +551,14 @@ class _AimaStatusViewModel {
   const _AimaStatusViewModel({
     required this.title,
     required this.subtitle,
-    required this.tunnelLabel,
+    required this.accessLabel,
     required this.icon,
     required this.color,
   });
 
   final String title;
   final String subtitle;
-  final String tunnelLabel;
+  final String accessLabel;
   final IconData icon;
   final Color color;
 
@@ -379,8 +569,8 @@ class _AimaStatusViewModel {
     if (network.supported && !network.hasNetwork) {
       return const _AimaStatusViewModel(
         title: 'Нет сети',
-        subtitle: 'VPN подключится после восстановления Wi-Fi или мобильного интернета.',
-        tunnelLabel: 'Туннель ожидает сеть',
+        subtitle: 'Подключение продолжится после восстановления Wi-Fi или мобильного интернета.',
+        accessLabel: 'Ожидаем сеть',
         icon: Icons.signal_cellular_connected_no_internet_0_bar_rounded,
         color: Color(0xFFFFB85C),
       );
@@ -389,8 +579,8 @@ class _AimaStatusViewModel {
     if (network.captivePortal) {
       return const _AimaStatusViewModel(
         title: 'Требуется вход в Wi-Fi',
-        subtitle: 'Откройте страницу авторизации сети. После входа AIMA продолжит подключение.',
-        tunnelLabel: 'Туннель приостановлен',
+        subtitle: 'Откройте страницу авторизации сети. После входа Xservis продолжит автоматически.',
+        accessLabel: 'Ожидаем вход',
         icon: Icons.wifi_password_rounded,
         color: Color(0xFFFFB85C),
       );
@@ -398,54 +588,54 @@ class _AimaStatusViewModel {
 
     return switch (connection) {
       AsyncData(value: Connected()) => _AimaStatusViewModel(
-          title: network.networkChanged ? 'Соединение восстановлено' : 'Защищено',
+          title: network.networkChanged ? 'Соединение восстановлено' : 'Всё готово',
           subtitle: network.networkChanged
-              ? 'Сеть изменилась. Защищённый маршрут уже перепроверен.'
-              : 'VPN-туннель активен. Сервер и маршрут выбраны автоматически.',
-          tunnelLabel: 'Туннель активен',
+              ? 'Сеть изменилась. Xservis уже перепроверил соединение.'
+              : 'Подключение активно. Лучший доступ выбирается автоматически.',
+          accessLabel: 'Активно',
           icon: Icons.verified_user_rounded,
           color: const Color(0xFF41F2A1),
         ),
       AsyncData(value: Connecting()) => const _AimaStatusViewModel(
           title: 'Подключаем',
-          subtitle: 'Проверяем сеть, сервер и защищённый маршрут. Ничего делать не нужно.',
-          tunnelLabel: 'Установка туннеля',
+          subtitle: 'Проверяем доступность и выбираем лучший вариант. Ничего делать не нужно.',
+          accessLabel: 'Настройка',
           icon: Icons.sync_rounded,
           color: Color(0xFF55D7FF),
         ),
       AsyncData(value: Disconnecting()) => const _AimaStatusViewModel(
           title: 'Отключаем',
-          subtitle: 'Завершаем защищённое соединение без утечки маршрута.',
-          tunnelLabel: 'Остановка туннеля',
+          subtitle: 'Завершаем соединение.',
+          accessLabel: 'Отключение',
           icon: Icons.power_settings_new_rounded,
           color: Color(0xFFB6C4BE),
         ),
       AsyncData(value: Disconnected(connectionFailure: final failure?)) =>
         _AimaStatusViewModel(
           title: 'Не удалось подключиться',
-          subtitle: 'Причина: ${failure.toString()}. Выберите повторное подключение.',
-          tunnelLabel: 'Туннель не активен',
+          subtitle: 'Повторите подключение. Код: ${failure.toString()}.',
+          accessLabel: 'Нужен повтор',
           icon: Icons.gpp_bad_rounded,
           color: const Color(0xFFFF6B77),
         ),
       AsyncData(value: Disconnected()) => const _AimaStatusViewModel(
           title: 'Готово к подключению',
-          subtitle: 'Нажмите большую кнопку. AIMA сама выберет рабочий сервер и маршрут.',
-          tunnelLabel: 'Туннель выключен',
+          subtitle: 'Нажмите большую кнопку. Xservis всё настроит автоматически.',
+          accessLabel: 'Готово',
           icon: Icons.shield_outlined,
           color: Color(0xFF8BFFD0),
         ),
       AsyncError() => const _AimaStatusViewModel(
           title: 'Ошибка состояния',
-          subtitle: 'Состояние VPN не удалось прочитать. Повторите подключение.',
-          tunnelLabel: 'Статус не подтверждён',
+          subtitle: 'Не удалось прочитать состояние. Повторите подключение.',
+          accessLabel: 'Не подтверждено',
           icon: Icons.error_outline_rounded,
           color: Color(0xFFFF6B77),
         ),
       _ => const _AimaStatusViewModel(
           title: 'Проверяем систему',
-          subtitle: 'Читаем состояние сети и VPN-модуля.',
-          tunnelLabel: 'Проверка',
+          subtitle: 'Подготавливаем соединение.',
+          accessLabel: 'Проверка',
           icon: Icons.radar_rounded,
           color: Color(0xFF55D7FF),
         ),
@@ -460,7 +650,7 @@ class AppVersionLabel extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
     final version = ref.watch(appInfoProvider).requireValue.presentVersion;
-    if (version.isBlank) return const SizedBox();
+    if (version.trim().isEmpty) return const SizedBox();
 
     return Semantics(
       label: t.common.version,
