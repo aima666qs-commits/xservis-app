@@ -62,7 +62,6 @@ class ConnectionButton extends HookConsumerWidget {
     //   //   },
     //   // );
 
-    const buttonTheme = ConnectionButtonTheme.light;
 
     //   // return CircleDesignWidget(
     //   //   onTap: switch (connectionStatus) {
@@ -153,11 +152,11 @@ class ConnectionButton extends HookConsumerWidget {
         _ => "",
       },
       buttonColor: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => buttonTheme.connectedColor!,
-        AsyncData(value: _) => buttonTheme.idleColor!,
-        _ => Colors.red,
+        AsyncData(value: Connected()) when requiresReconnect == true => const Color(0xFF67E8F0),
+        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color(0xFFFFC76B),
+        AsyncData(value: Connected()) => const Color(0xFF33E7B2),
+        AsyncData(value: _) => const Color(0xFF00DDEB),
+        _ => const Color(0xFFFF6F8D),
       },
       image: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => Assets.images.disconnectNorouz,
@@ -169,11 +168,11 @@ class ConnectionButton extends HookConsumerWidget {
         _ => Assets.images.disconnectNorouz,
       },
       newButtonColor: switch (connectionStatus) {
-        AsyncData(value: Connected()) when requiresReconnect == true => Colors.teal,
-        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color.fromARGB(255, 185, 176, 103),
-        AsyncData(value: Connected()) => buttonTheme.connectedColor!,
-        AsyncData(value: _) => buttonTheme.idleColor!,
-        _ => Colors.red,
+        AsyncData(value: Connected()) when requiresReconnect == true => const Color(0xFF67E8F0),
+        AsyncData(value: Connected()) when delay <= 0 || delay >= 65000 => const Color(0xFFFFC76B),
+        AsyncData(value: Connected()) => const Color(0xFF33E7B2),
+        AsyncData(value: _) => const Color(0xFF00DDEB),
+        _ => const Color(0xFFFF6F8D),
       },
       animated: switch (connectionStatus) {
         AsyncData(value: Connected()) when requiresReconnect == true => false,
@@ -227,14 +226,29 @@ class _ConnectionButton extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(blurRadius: 16, color: buttonColor.withValues(alpha: .5))],
+              color: const Color(0xFF06131B),
+              border: Border.all(
+                color: buttonColor.withValues(alpha: .72),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 34,
+                  spreadRadius: 2,
+                  color: buttonColor.withValues(alpha: .20),
+                ),
+                BoxShadow(
+                  blurRadius: 0,
+                  spreadRadius: 10,
+                  color: buttonColor.withValues(alpha: .035),
+                ),
+              ],
             ),
             width: 148,
             height: 148,
             child: Material(
               key: const ValueKey("home_connection_button"),
               shape: const CircleBorder(),
-              color: Colors.white,
+              color: const Color(0xFF06131B),
               child: InkWell(
                 focusColor: Colors.grey,
                 onTap: onTap,
@@ -267,13 +281,13 @@ class _ConnectionButton extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // const Gap(8),
-                    Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Theme.of(context).colorScheme.secondary),
+                    const Icon(FontAwesomeIcons.shieldHalved, size: 16, color: Color(0xFF00DDEB)),
                     const Gap(4),
                     Text(
                       secureLabel,
                       style: Theme.of(
                         context,
-                      ).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.secondary),
+                      ).textTheme.titleSmall?.copyWith(color: const Color(0xFF66EAF1)),
                     ),
                   ],
                 ),
