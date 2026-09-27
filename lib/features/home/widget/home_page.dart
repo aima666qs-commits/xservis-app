@@ -22,7 +22,6 @@ class HomePage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final t = ref.watch(translationsProvider).requireValue;
     final activeProfile = ref.watch(activeProfileProvider);
     final connection = ref.watch(connectionNotifierProvider);
@@ -32,9 +31,9 @@ class HomePage extends HookConsumerWidget {
     final status = _AimaStatusViewModel.from(connection, network);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF020706),
+      backgroundColor: const Color(0xFF02070B),
       appBar: AppBar(
-        backgroundColor: const Color(0xD9020706),
+        backgroundColor: const Color(0xD902070B),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Row(
@@ -45,7 +44,7 @@ class HomePage extends HookConsumerWidget {
               TextSpan(
                 children: [
                   const TextSpan(
-                    text: 'AIMA VPN',
+                    text: 'XFreedom',
                     style: TextStyle(fontWeight: FontWeight.w900),
                   ),
                   const TextSpan(text: '  '),
@@ -65,7 +64,7 @@ class HomePage extends HookConsumerWidget {
             key: const ValueKey('profile_add_button'),
             label: t.pages.profiles.add,
             child: IconButton(
-              icon: const Icon(Icons.add_rounded, color: Color(0xFF41F2A1)),
+              icon: const Icon(Icons.add_rounded, color: Color(0xFF00DDEB)),
               onPressed: () =>
                   ref.read(bottomSheetsNotifierProvider.notifier).showAddProfile(),
             ),
@@ -78,7 +77,7 @@ class HomePage extends HookConsumerWidget {
           top: false,
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 680),
+              constraints: const BoxConstraints(maxWidth: 760),
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
@@ -87,31 +86,31 @@ class HomePage extends HookConsumerWidget {
                     sliver: SliverList.list(
                       children: [
                         _AimaHeroStatus(status: status, network: network),
-                        const Gap(14),
-                        switch (activeProfile) {
-                          AsyncData(value: final profile?) => ProfileTile(
-                              profile: profile,
-                              isMain: true,
-                              margin: EdgeInsets.zero,
-                              color: const Color(0xB30B1714),
-                            ),
-                          _ => const _NoProfileCard(),
-                        },
-                        const Gap(26),
+                        const Gap(22),
                         Center(
                           child: Column(
                             children: [
                               const ConnectionButton(),
                               const Gap(10),
                               const ActiveProxyDelayIndicator(),
-                              const Gap(12),
-                              _NetworkFacts(network: network),
                             ],
                           ),
                         ),
                         const Gap(22),
+                        switch (activeProfile) {
+                          AsyncData(value: final profile?) => ProfileTile(
+                              profile: profile,
+                              isMain: true,
+                              margin: EdgeInsets.zero,
+                              color: const Color(0xE607131C),
+                            ),
+                          _ => const _NoProfileCard(),
+                        },
+                        const Gap(12),
+                        _NetworkFacts(network: network),
+                        const Gap(18),
                         const ActiveProxyFooter(),
-                        const Gap(40),
+                        const Gap(48),
                       ],
                     ),
                   ),
@@ -125,9 +124,9 @@ class HomePage extends HookConsumerWidget {
       floatingActionButton: (ref.watch(hasAnyProfileProvider).value ?? false)
           ? FilledButton.tonalIcon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xE611211C),
-                foregroundColor: const Color(0xFF8BFFD0),
-                side: const BorderSide(color: Color(0x6600FF9D)),
+                backgroundColor: const Color(0xF207131C),
+                foregroundColor: const Color(0xFF72F4FA),
+                side: const BorderSide(color: Color(0x6600DDEB)),
               ),
               onPressed: () => ref
                   .read(bottomSheetsNotifierProvider.notifier)
@@ -160,16 +159,15 @@ class _AimaHeroStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xD90A1512),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: status.color.withValues(alpha: .55)),
+        color: const Color(0xE607131C),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: status.color.withValues(alpha: .28)),
         boxShadow: [
           BoxShadow(
-            color: status.color.withValues(alpha: .16),
-            blurRadius: 34,
-            spreadRadius: 1,
+            color: status.color.withValues(alpha: .08),
+            blurRadius: 28,
           ),
         ],
       ),
@@ -205,7 +203,7 @@ class _AimaHeroStatus extends StatelessWidget {
                     Text(
                       status.subtitle,
                       style: const TextStyle(
-                        color: Color(0xFF9EC2B4),
+                        color: Color(0xFF829CA8),
                         height: 1.35,
                       ),
                     ),
@@ -249,7 +247,7 @@ class _NetworkFacts extends StatelessWidget {
     if (!network.supported) {
       return const Text(
         'Диагностика сети недоступна на этой платформе',
-        style: TextStyle(color: Color(0xFF76998C), fontSize: 12),
+        style: TextStyle(color: Color(0xFF688691), fontSize: 12),
       );
     }
 
@@ -264,7 +262,7 @@ class _NetworkFacts extends StatelessWidget {
     return Text(
       message,
       textAlign: TextAlign.center,
-      style: const TextStyle(color: Color(0xFF9EC2B4), fontSize: 12),
+      style: const TextStyle(color: Color(0xFF829CA8), fontSize: 12),
     );
   }
 }
@@ -277,13 +275,13 @@ class _NoProfileCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xB30B1714),
+        color: const Color(0xE607131C),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x4400FF9D)),
+        border: Border.all(color: const Color(0x4400DDEB)),
       ),
       child: const Row(
         children: [
-          Icon(Icons.key_rounded, color: Color(0xFF41F2A1)),
+          Icon(Icons.key_rounded, color: Color(0xFF00DDEB)),
           Gap(12),
           Expanded(
             child: Text(
@@ -307,14 +305,14 @@ class _PlatformBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0x2200FF9D),
+        color: const Color(0x2200DDEB),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x5500FF9D)),
+        border: Border.all(color: const Color(0x5500DDEB)),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: Color(0xFF8BFFD0),
+          color: Color(0xFF72F4FA),
           fontSize: 10,
           fontWeight: FontWeight.w900,
           letterSpacing: 1,
@@ -335,19 +333,19 @@ class _FactChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0x2200FF9D),
+        color: const Color(0x2200DDEB),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x3300FF9D)),
+        border: Border.all(color: const Color(0x3300DDEB)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF75FBBE)),
+          Icon(icon, size: 14, color: const Color(0xFF66EAF1)),
           const Gap(6),
           Text(
             text,
             style: const TextStyle(
-              color: Color(0xFFC7F9E6),
+              color: Color(0xFFC9F8FA),
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -405,7 +403,7 @@ class _AimaStatusViewModel {
               : 'VPN-туннель активен. Сервер и маршрут выбраны автоматически.',
           tunnelLabel: 'Туннель активен',
           icon: Icons.verified_user_rounded,
-          color: const Color(0xFF41F2A1),
+          color: const Color(0xFF00DDEB),
         ),
       AsyncData(value: Connecting()) => const _AimaStatusViewModel(
           title: 'Подключаем',
@@ -434,7 +432,7 @@ class _AimaStatusViewModel {
           subtitle: 'Нажмите большую кнопку. AIMA сама выберет рабочий сервер и маршрут.',
           tunnelLabel: 'Туннель выключен',
           icon: Icons.shield_outlined,
-          color: Color(0xFF8BFFD0),
+          color: Color(0xFF72F4FA),
         ),
       AsyncError() => const _AimaStatusViewModel(
           title: 'Ошибка состояния',
@@ -468,14 +466,14 @@ class AppVersionLabel extends HookConsumerWidget {
       button: false,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0x2200FF9D),
+          color: const Color(0x2200DDEB),
           borderRadius: BorderRadius.circular(6),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: Text(
           version,
           textDirection: TextDirection.ltr,
-          style: const TextStyle(color: Color(0xFF8BFFD0), fontSize: 10),
+          style: const TextStyle(color: Color(0xFF72F4FA), fontSize: 10),
         ),
       ),
     );
