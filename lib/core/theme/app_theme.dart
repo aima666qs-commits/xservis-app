@@ -22,7 +22,7 @@ class AppTheme {
     final t = preset.tokens;
     return ColorScheme.fromSeed(
       seedColor: t.accentA,
-      brightness: brightness,
+      brightness: Brightness.dark,
     ).copyWith(
       primary: t.accentA,
       secondary: t.accentB,
