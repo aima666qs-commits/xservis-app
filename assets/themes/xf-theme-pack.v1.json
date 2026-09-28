@@ -36,6 +36,26 @@
       "name": "CSS Design Awards",
       "url": "https://www.cssdesignawards.com/",
       "role": "awarded interaction/UI reference"
+    },
+    {
+      "name": "Awwwards",
+      "url": "https://www.awwwards.com/",
+      "role": "award-winning interaction, motion and WebGL reference"
+    },
+    {
+      "name": "The FWA",
+      "url": "https://thefwa.com/",
+      "role": "immersive digital-experience and WebGL reference"
+    },
+    {
+      "name": "Recent",
+      "url": "https://recent.design/",
+      "role": "curated web, interface, motion and 3D reference"
+    },
+    {
+      "name": "Mobbin",
+      "url": "https://mobbin.com/",
+      "role": "real shipped product UI flows and microinteraction reference"
     }
   ],
   "effects": {
