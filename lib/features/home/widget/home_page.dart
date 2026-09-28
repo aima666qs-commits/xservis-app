@@ -29,11 +29,12 @@ class HomePage extends HookConsumerWidget {
         const AimaNetworkSnapshot.unsupported();
 
     final status = _AimaStatusViewModel.from(connection, network);
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF02070B),
+      backgroundColor: scheme.surface,
       appBar: AppBar(
-        backgroundColor: const Color(0xD902070B),
+        backgroundColor: scheme.surface.withValues(alpha: .86),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Row(
@@ -102,7 +103,7 @@ class HomePage extends HookConsumerWidget {
                               profile: profile,
                               isMain: true,
                               margin: EdgeInsets.zero,
-                              color: const Color(0xE607131C),
+                              color: scheme.surface.withValues(alpha: .90),
                             ),
                           _ => const _NoProfileCard(),
                         },
@@ -124,9 +125,9 @@ class HomePage extends HookConsumerWidget {
       floatingActionButton: (ref.watch(hasAnyProfileProvider).value ?? false)
           ? FilledButton.tonalIcon(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xF207131C),
-                foregroundColor: const Color(0xFF72F4FA),
-                side: const BorderSide(color: Color(0x6600DDEB)),
+                backgroundColor: scheme.surface.withValues(alpha: .95),
+                foregroundColor: scheme.primary,
+                side: BorderSide(color: scheme.primary.withValues(alpha: .40)),
               ),
               onPressed: () => ref
                   .read(bottomSheetsNotifierProvider.notifier)
@@ -158,10 +159,11 @@ class _AimaHeroStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xE607131C),
+        color: scheme.surface.withValues(alpha: .90),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: status.color.withValues(alpha: .28)),
         boxShadow: [
@@ -272,12 +274,13 @@ class _NoProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xE607131C),
+        color: scheme.surface.withValues(alpha: .90),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0x4400DDEB)),
+        border: Border.all(color: scheme.primary.withValues(alpha: .27)),
       ),
       child: const Row(
         children: [
@@ -302,17 +305,18 @@ class _PlatformBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0x2200DDEB),
+        color: scheme.primary.withValues(alpha: .13),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x5500DDEB)),
+        border: Border.all(color: scheme.primary.withValues(alpha: .33)),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFF72F4FA),
+        style: TextStyle(
+          color: scheme.primary,
           fontSize: 10,
           fontWeight: FontWeight.w900,
           letterSpacing: 1,
@@ -330,22 +334,23 @@ class _FactChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0x2200DDEB),
+        color: scheme.primary.withValues(alpha: .13),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0x3300DDEB)),
+        border: Border.all(color: scheme.primary.withValues(alpha: .20)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF66EAF1)),
+          Icon(icon, size: 14, color: scheme.primary),
           const Gap(6),
           Text(
             text,
-            style: const TextStyle(
-              color: Color(0xFFC9F8FA),
+            style: TextStyle(
+              color: scheme.onSurface,
               fontSize: 11,
               fontWeight: FontWeight.w700,
             ),
@@ -458,6 +463,7 @@ class AppVersionLabel extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(translationsProvider).requireValue;
+    final scheme = Theme.of(context).colorScheme;
     final version = ref.watch(appInfoProvider).requireValue.presentVersion;
     if (version.isBlank) return const SizedBox();
 
@@ -466,14 +472,14 @@ class AppVersionLabel extends HookConsumerWidget {
       button: false,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0x2200DDEB),
+          color: scheme.primary.withValues(alpha: .13),
           borderRadius: BorderRadius.circular(6),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         child: Text(
           version,
           textDirection: TextDirection.ltr,
-          style: const TextStyle(color: Color(0xFF72F4FA), fontSize: 10),
+          style: TextStyle(color: scheme.primary, fontSize: 10),
         ),
       ),
     );
