@@ -45,8 +45,15 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         if options.getAutoRoute() {
             settings.mtu = NSNumber(value: options.getMTU())
 
-           let dnsServer = try options.getDNSServerAddress()
-            let dnsSettings = NEDNSSettings(servers: [dnsServer.value,"fdfe:dcba:9876::1"])
+            let dnsServerIterator = try options.getDNSServerAddress()
+            var dnsServers: [String] = []
+            while dnsServerIterator.hasNext() {
+                dnsServers.append(dnsServerIterator.next())
+            }
+            if dnsServers.isEmpty {
+                dnsServers.append("fdfe:dcba:9876::1")
+            }
+            let dnsSettings = NEDNSSettings(servers: dnsServers)
             dnsSettings.matchDomains = [""]
             dnsSettings.matchDomainsNoSearch = true
             settings.dnsSettings = dnsSettings
@@ -287,6 +294,18 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
     public func closeDefaultInterfaceMonitor(_: LibboxInterfaceUpdateListenerProtocol?) throws {
         nwMonitor?.cancel()
         nwMonitor = nil
+    }
+
+    // Current libbox platform API includes neighbor-monitor hooks.
+    // XFreedom's iOS packet tunnel does not synthesize neighbor-table state;
+    // the hooks intentionally remain no-op until the platform supplies real data.
+    public func startNeighborMonitor(_ listener: LibboxNeighborUpdateListenerProtocol?) throws {
+    }
+
+    public func closeNeighborMonitor(_ listener: LibboxNeighborUpdateListenerProtocol?) throws {
+    }
+
+    public func registerMyInterface(_ name: String?) {
     }
 
     public func getInterfaces() throws -> LibboxNetworkInterfaceIteratorProtocol {
