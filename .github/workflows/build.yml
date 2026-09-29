@@ -23,14 +23,14 @@ env:
   TARGET_NAME_AppImage: "Hiddify-Linux-x64-AppImage"
   TARGET_NAME_deb: "Hiddify-Debian-x64"
   # TARGET_NAME_rpm: "Hiddify-rpm-x64"
-  TARGET_NAME_apk: "Hiddify-Android"
-  TARGET_NAME_aab: "Hiddify-Android"
-  TARGET_NAME_exe: "Hiddify-Windows-Setup-x64"
-  TARGET_NAME_msix: "Hiddify-Windows-x64"
-  TARGET_NAME_zip: "Hiddify-Windows-Portable-x64"
-  TARGET_NAME_dmg: "Hiddify-MacOS"
-  TARGET_NAME_pkg: "Hiddify-MacOS-Installer"
-  TARGET_NAME_ipa: "Hiddify-iOS"
+  TARGET_NAME_apk: "XFreedom-Android"
+  TARGET_NAME_aab: "XFreedom-Android"
+  TARGET_NAME_exe: "XFreedom-Windows-Setup-x64"
+  TARGET_NAME_msix: "XFreedom-Windows-x64"
+  TARGET_NAME_zip: "XFreedom-Windows-Portable-x64"
+  TARGET_NAME_dmg: "XFreedom-MacOS"
+  TARGET_NAME_pkg: "XFreedom-MacOS-Installer"
+  TARGET_NAME_ipa: "XFreedom-iOS"
   
 
 jobs:
@@ -114,19 +114,24 @@ jobs:
           #   filename: hiddify-ios
           #   targets: ipa
     runs-on: ${{ matrix.os }}
+    env:
+      APPLE_CERTIFICATE_P12: "${{ secrets.APPLE_CERTIFICATE_P12 }}"
+      APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64: "${{ secrets.APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64 }}"
+      ANDROID_SIGNING_KEY: "${{ secrets.ANDROID_SIGNING_KEY }}"
+      WINDOWS_SIGNING_KEY: "${{ secrets.WINDOWS_SIGNING_KEY }}"
     steps:
       - name: checkout
         uses: actions/checkout@v6
 
       - name: Import Apple Codesign Certificates
-        if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') }}
+        if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') && env.APPLE_CERTIFICATE_P12 != '' }}
         uses: apple-actions/import-codesign-certs@v6
         with: 
             p12-file-base64: "${{ secrets.APPLE_CERTIFICATE_P12 }}"
             p12-password: "${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}"
 
       - name: Import Apple Mobile Provisioning Profile
-        if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') }}
+        if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') && env.APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64 != '' }}
         run: |
            mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
            echo "${{secrets.APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64}}"|base64 --decode | tar xz -C ~/Library/MobileDevice/Provisioning\ Profiles
@@ -188,8 +193,10 @@ jobs:
       #     link-to-sdk: true
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
         if: startsWith(matrix.platform,'android')
+        with:
+          packages: 'platform-tools'
       # - name: Cache Android SDK
       #   uses: actions/cache@v5
       #   if: startsWith(matrix.platform,'android')
@@ -217,7 +224,7 @@ jobs:
           echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Setup Android Signing Properties
-        if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'android') }}
+        if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'android') && env.ANDROID_SIGNING_KEY != '' }}
         run: |
           echo "${{ secrets.ANDROID_SIGNING_KEY }}" | base64 --decode > android/key.jks
           echo "storeFile=$(pwd)/android/key.jks" > android/key.properties
@@ -226,7 +233,7 @@ jobs:
           echo "keyAlias=${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}" >> android/key.properties
 
       - name: Setup Windows Signing Properties
-        if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'windows') }}
+        if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'windows') && env.WINDOWS_SIGNING_KEY != '' }}
         run: |
             [IO.File]::WriteAllBytes("windows\sign.pfx", [Convert]::FromBase64String("${{ secrets.WINDOWS_SIGNING_KEY }}"))
             (Get-Content "windows\packaging\msix\make_config.yaml") -replace '^certificate_password:.*$', 'certificate_password: ${{ secrets.WINDOWS_SIGNING_PASSWORD }}' | Set-Content "windows\packaging\msix\make_config.yaml"
@@ -263,7 +270,7 @@ jobs:
           folder: 'dist'
           timestamp-server: 'http://timestamp.digicert.com'
           recursive: true
-          description: 'Hiddify'
+          description: 'XFreedom'
 
       - name: Copy to out Windows
         if: matrix.platform == 'windows'
@@ -315,7 +322,7 @@ jobs:
         run: |
           mkdir out
           ls -R ./build/app/outputs
-          cp ./build/app/outputs/bundle/release/app-release.aab out/hiddify-android-market.aab || echo "no aab"
+          cp ./build/app/outputs/bundle/release/app-release.aab out/xfreedom-android-market.aab || echo "no aab"
 
       - name: Copy to out unix
         if: startsWith(matrix.platform,'linux') || matrix.platform == 'macos' || matrix.platform == 'ios'
@@ -414,20 +421,6 @@ jobs:
           body_path: './release.md'
           prerelease: true
 
-      - name: Create or Update Draft Release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN_FOR_HIDDIFY_APP_REPO }}
-          GITHUB_REPOSITORY: hiddify/hiddify-app
-        with:
-          files: ./out/*
-          name: 'draft'
-          tag_name: 'draft'
-          body_path: './release.md'
-          target_commitish: '530bf77839a74d4f13847ba244a20734ac7ab119'
-          prerelease: true
-          repository: hiddify/hiddify-app
-
   upload-release:
     permissions: write-all
     if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' }}
@@ -449,7 +442,7 @@ jobs:
           ls -R ./out
           ls -R ./.github/
           ls -R ./.git/
-          mv out/hiddify-android-market.aab  hiddify-android-market.aab
+          mv out/xfreedom-android-market.aab  xfreedom-android-market.aab
 
       - name: prepare_release_message
         run: |
@@ -476,7 +469,7 @@ jobs:
           serviceAccountJson: service_account.json
           packageName: app.hiddify.com
           releaseName: ${{ env.TAG_NAME }}
-          releaseFiles: ./hiddify-android-market.aab
+          releaseFiles: ./xfreedom-android-market.aab
           track: 'beta'
 
 
