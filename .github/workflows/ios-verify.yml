@@ -1,0 +1,52 @@
+name: XFreedom iOS compile verification
+
+on:
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/ios-verify.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'ios/**'
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/ios-verify.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ios-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-compile:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: subosito/flutter-action@v2.21.0
+        with:
+          flutter-version: '3.38.5'
+          channel: stable
+          cache: true
+      - name: Prepare iOS dependencies
+        run: |
+          make ios-prepare
+      - name: Compile XFreedom for iPhone without signing
+        run: |
+          flutter build ios --release --no-codesign --target lib/main.dart
+      - name: Package unsigned compile artifact
+        run: |
+          test -d build/ios/iphoneos/Runner.app
+          ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app XFreedom-iOS-unsigned.app.zip
+      - name: Upload unsigned verification artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: XFreedom-iOS-unsigned
+          path: XFreedom-iOS-unsigned.app.zip
+          retention-days: 7
