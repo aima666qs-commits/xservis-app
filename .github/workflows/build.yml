@@ -123,6 +123,21 @@ jobs:
       - name: checkout
         uses: actions/checkout@v6
 
+      - name: Require Android release signing key
+        if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' && startsWith(matrix.platform,'android') }}
+        run: |
+          test -n "$ANDROID_SIGNING_KEY" || { echo "ANDROID_SIGNING_KEY is required for a production Android release"; exit 1; }
+
+      - name: Require Windows release signing key
+        if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' && startsWith(matrix.platform,'windows') }}
+        run: |
+          test -n "$WINDOWS_SIGNING_KEY" || { echo "WINDOWS_SIGNING_KEY is required for a production Windows release"; exit 1; }
+
+      - name: Require Apple release signing certificate
+        if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' && startsWith(matrix.os,'macos') }}
+        run: |
+          test -n "$APPLE_CERTIFICATE_P12" || { echo "APPLE_CERTIFICATE_P12 is required for a production Apple release"; exit 1; }
+
       - name: Import Apple Codesign Certificates
         if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') && env.APPLE_CERTIFICATE_P12 != '' }}
         uses: apple-actions/import-codesign-certs@v6
@@ -475,47 +490,68 @@ jobs:
 
   upload-to-testflight:
     needs: [build]
-    if: ${{ inputs.upload-artifact &&  inputs.tag-name != 'draft' }}
-    #if: ${{ inputs.upload-artifact }}
-    runs-on: macOS-latest
-    timeout-minutes: 30
+    if: ${{ inputs.upload-artifact && inputs.tag-name != 'draft' }}
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      APPLE_CERTIFICATE_P12: "${{ secrets.APPLE_CERTIFICATE_P12 }}"
+      APPLE_CERTIFICATE_P12_PASSWORD: "${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}"
+      APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64: "${{ secrets.APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64 }}"
+      APPSTORE_ISSUER_ID: "${{ secrets.APPSTORE_ISSUER_ID }}"
+      APPSTORE_API_KEY_ID: "${{ secrets.APPSTORE_API_KEY_ID }}"
+      APPSTORE_API_PRIVATE_KEY: "${{ secrets.APPSTORE_API_PRIVATE_KEY }}"
     steps:
-      - name: Download Artifact
-        uses: actions/download-artifact@v7
-        with:
-          merge-multiple: true
-          pattern: "*ios*"
-          path: ./out/
+      - uses: actions/checkout@v6
 
-      - uses: Apple-Actions/import-codesign-certs@v6
-        with:
-          p12-file-base64: ${{ secrets.APPLE_UPLOAD_CERTIFICATE_P12 }}
-          p12-password: ${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}
+      - name: Require XFreedom iOS signing credentials
+        run: |
+          test -n "$APPLE_CERTIFICATE_P12" || { echo "Missing APPLE_CERTIFICATE_P12"; exit 1; }
+          test -n "$APPLE_CERTIFICATE_P12_PASSWORD" || { echo "Missing APPLE_CERTIFICATE_P12_PASSWORD"; exit 1; }
+          test -n "$APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64" || { echo "Missing Apple provisioning profiles"; exit 1; }
+          test -n "$APPSTORE_ISSUER_ID" || { echo "Missing APPSTORE_ISSUER_ID"; exit 1; }
+          test -n "$APPSTORE_API_KEY_ID" || { echo "Missing APPSTORE_API_KEY_ID"; exit 1; }
+          test -n "$APPSTORE_API_PRIVATE_KEY" || { echo "Missing APPSTORE_API_PRIVATE_KEY"; exit 1; }
 
-      - uses: Apple-Actions/download-provisioning-profiles@v1
+      - uses: subosito/flutter-action@v2.21.0
         with:
-          bundle-id: app.xservis.xfreedom
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-      - uses: Apple-Actions/download-provisioning-profiles@v1
+          flutter-version: '3.38.5'
+          channel: stable
+          cache: true
+
+      - uses: apple-actions/import-codesign-certs@v6
         with:
-          bundle-id: app.xservis.xfreedom.PacketTunnel
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-  
+          p12-file-base64: "${{ secrets.APPLE_CERTIFICATE_P12 }}"
+          p12-password: "${{ secrets.APPLE_CERTIFICATE_P12_PASSWORD }}"
 
-
-      - name: Import Apple Mobile Provisioning Profile
+      - name: Install provisioning profiles
         run: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          echo "${{secrets.APPLE_DIST_PROVISIONING_PROFILES_TARGZ_BASE64}}"|base64 --decode | tar xz -C ~/Library/MobileDevice/Provisioning\ Profiles
-        #echo "${{secrets.NEW_APPLE_STORE_PROVISIONING_PROFILES_TARXZ_BASE64}}"|base64 --decode | tar xJ -C ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${{ secrets.APPLE_MOBILE_PROVISIONING_PROFILES_TARGZ_BASE64 }}" | base64 --decode | tar xz -C ~/Library/MobileDevice/Provisioning\ Profiles
+          security find-identity -v -p codesigning
+
+      - name: Prepare iOS
+        run: |
+          make ios-install-deps
+          make ios-prepare
+
+      - name: Build signed XFreedom IPA
+        run: |
+          make ios-release
+          mkdir -p out
+          IPA="$(find dist -type f -name '*.ipa' | head -n 1)"
+          test -n "$IPA" || { echo "IPA not produced"; exit 1; }
+          cp "$IPA" out/XFreedom-iOS.ipa
+
+      - name: Upload iOS release artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ios
+          path: out/XFreedom-iOS.ipa
+          retention-days: 7
 
       - uses: Apple-Actions/upload-testflight-build@v4
         with:
-          app-path: 'out/XFreedom-iOS.ipa' 
+          app-path: 'out/XFreedom-iOS.ipa'
           issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
