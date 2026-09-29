@@ -284,7 +284,14 @@ android-aab-release:
 	  --build-dart-define=sentry_dsn=$(SENTRY_DSN) \
 	  --build-dart-define=release=google-play
 
-windows-release: windows-zip-release windows-exe-release windows-msix-release
+windows-release: windows-zip-release windows-exe-release windows-msix-release-if-signed
+
+windows-msix-release-if-signed:
+	@if [ -f windows/sign.pfx ]; then \
+		$(MAKE) windows-msix-release; \
+	else \
+		echo "Skipping MSIX: windows/sign.pfx is not configured"; \
+	fi
 
 windows-zip-release:
 	fastforge package \
