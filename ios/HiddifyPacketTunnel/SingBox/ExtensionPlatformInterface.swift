@@ -8,6 +8,7 @@
 import Foundation
 import HiddifyCore
 import NetworkExtension
+import UIKit
 
 public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtocol {
     
@@ -45,8 +46,15 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         if options.getAutoRoute() {
             settings.mtu = NSNumber(value: options.getMTU())
 
-           let dnsServer = try options.getDNSServerAddress()
-            let dnsSettings = NEDNSSettings(servers: [dnsServer.value,"fdfe:dcba:9876::1"])
+            let dnsServerIterator = try options.getDNSServerAddress()
+            var dnsServers: [String] = []
+            while dnsServerIterator.hasNext() {
+                dnsServers.append(dnsServerIterator.next())
+            }
+            if dnsServers.isEmpty {
+                dnsServers.append("fdfe:dcba:9876::1")
+            }
+            let dnsSettings = NEDNSSettings(servers: dnsServers)
             dnsSettings.matchDomains = [""]
             dnsSettings.matchDomainsNoSearch = true
             settings.dnsSettings = dnsSettings
@@ -413,6 +421,11 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
 //        tunnel.stopService()
 //    }
 
+    public func serviceStop() throws {
+        MobileClose(4)
+        reset()
+    }
+
     public func serviceReload() throws {
         try runBlocking { [self] in
             try await tunnel.reloadService()
@@ -507,5 +520,71 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         nil
     }
     public func autoDetectControl(_: Int32) throws {}
+
+    public func connectSSHAgent(_ ret0_: UnsafeMutablePointer<Int32>?) throws {
+        throw NSError(
+            domain: "ExtensionPlatformInterface",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "SSH agent forwarding is not supported on iOS"]
+        )
+    }
+
+    public func triggerNativeCrash() throws {
+        throw NSError(
+            domain: "ExtensionPlatformInterface",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Native crash trigger is disabled"]
+        )
+    }
+
+    public func cancelNotification(_ identifier: String?, typeID _: Int32) throws {
+        // XFreedom does not schedule tunnel-extension notifications here.
+    }
+
+    public func startNeighborMonitor(_ listener: LibboxNeighborUpdateListenerProtocol?) throws {
+        // Neighbor monitoring is not required by the iOS packet tunnel.
+    }
+
+    public func registerMyInterface(_ name: String?) {
+        // No privileged bridge/interface registration is available on iOS.
+    }
+
+    public func closeNeighborMonitor(_: LibboxNeighborUpdateListenerProtocol?) throws {
+        // No-op counterpart for startNeighborMonitor.
+    }
+
+    public func usePlatformShell() -> Bool {
+        false
+    }
+
+    public func checkPlatformShell() throws {
+        throw NSError(
+            domain: "ExtensionPlatformInterface",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "Platform shell is not supported on iOS"]
+        )
+    }
+
+    public func readSystemSSHHostKey(_ error: NSErrorPointer) -> String {
+        error?.pointee = NSError(
+            domain: "ExtensionPlatformInterface",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "System SSH host key is not available on iOS"]
+        )
+        return ""
+    }
+
+    public func lookupSFTPServer(_ error: NSErrorPointer) -> String {
+        error?.pointee = NSError(
+            domain: "ExtensionPlatformInterface",
+            code: -1,
+            userInfo: [NSLocalizedDescriptionKey: "SFTP server is not available on iOS"]
+        )
+        return ""
+    }
+
+    public func tailscaleHostname() -> String {
+        UIDevice.current.name
+    }
 
 }

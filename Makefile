@@ -88,7 +88,10 @@ prepare:
 common-prepare:  get gen translate
 windows-prepare: common-prepare windows-libs
 	
-ios-prepare: common-prepare ios-libs 
+ios-icon:
+	python3 tool/generate_xfreedom_ios_icons.py
+
+ios-prepare: common-prepare ios-icon ios-libs 
 	cd ios; pod repo update; pod install;echo "done ios prepare"
 	
 macos-prepare: common-prepare macos-libs
