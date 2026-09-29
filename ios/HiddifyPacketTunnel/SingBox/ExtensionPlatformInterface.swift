@@ -565,21 +565,6 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
         )
     }
 
-    public func openShellSession(
-        _ user: LibboxPlatformUser?,
-        command: String?,
-        environ: (any LibboxStringIteratorProtocol)?,
-        term: String?,
-        rows: Int32,
-        cols: Int32
-    ) throws -> any LibboxShellSessionProtocol {
-        throw NSError(
-            domain: "ExtensionPlatformInterface",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey: "Shell sessions are not supported on iOS"]
-        )
-    }
-
     public func readSystemSSHHostKey(_ error: NSErrorPointer) -> String {
         error?.pointee = NSError(
             domain: "ExtensionPlatformInterface",
@@ -600,26 +585,6 @@ public class ExtensionPlatformInterface: NSObject, LibboxPlatformInterfaceProtoc
 
     public func tailscaleHostname() -> String {
         UIDevice.current.name
-    }
-
-    public func usePlatformBridge() -> Bool {
-        false
-    }
-
-    public func createBridge(_ options: LibboxBridgeOptions?) throws -> any LibboxBridgeSessionProtocol {
-        throw NSError(
-            domain: "ExtensionPlatformInterface",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey: "Platform bridge is not supported on iOS"]
-        )
-    }
-
-    public func lookupUser(_ username: String?) throws -> LibboxPlatformUser {
-        throw NSError(
-            domain: "ExtensionPlatformInterface",
-            code: -1,
-            userInfo: [NSLocalizedDescriptionKey: "Platform user lookup is not supported on iOS"]
-        )
     }
 
 }
