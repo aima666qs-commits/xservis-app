@@ -8,7 +8,7 @@
 PRODUCT_NAME = XFreedom
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = app.hiddify.com
+PRODUCT_BUNDLE_IDENTIFIER = app.xservis.xfreedom
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2023 hiddify.com. All rights reserved.
