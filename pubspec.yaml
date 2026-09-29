@@ -156,6 +156,7 @@ flutter:
     - assets/images/disconnect_norouz.PNG
     - assets/images/world_map.png
     - assets/images/source/ic_launcher_border.png
+    - assets/themes/xf-theme-pack.v1.json
 
   fonts:
     - family: Shabnam

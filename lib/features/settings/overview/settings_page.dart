@@ -147,6 +147,12 @@ class SettingsPage extends HookConsumerWidget {
             icon: Icons.layers_rounded,
             namedLocation: context.namedLocation('general'),
           ),
+          SettingsSection(
+            title: 'Темы и анимации',
+            icon: Icons.auto_awesome_rounded,
+            subtitle: const Text('64 premium-пресета XFreedom'),
+            namedLocation: context.namedLocation('themes'),
+          ),
           if (ref.watch(hasAnyProfileProvider).value ?? false)
             SettingsSection(
               title: t.pages.settings.chain.title,
