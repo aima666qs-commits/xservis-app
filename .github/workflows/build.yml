@@ -500,7 +500,7 @@ jobs:
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
       - uses: Apple-Actions/download-provisioning-profiles@v1
         with:
-          bundle-id: app.xservis.xfreedom.HiddifyPacketTunnel
+          bundle-id: app.xservis.xfreedom.PacketTunnel
           issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
           api-key-id: ${{ secrets.APPSTORE_API_KEY_ID }}
           api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
