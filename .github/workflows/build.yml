@@ -19,9 +19,9 @@ env:
   NDK_VERSION: r28c
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   TAG_NAME: "${{ inputs.tag-name }}"
-  TARGET_NAME_gz: "Hiddify-Linux-x64-AppImage.tar"
-  TARGET_NAME_AppImage: "Hiddify-Linux-x64-AppImage"
-  TARGET_NAME_deb: "Hiddify-Debian-x64"
+  TARGET_NAME_gz: "XFreedom-Linux-x64-AppImage.tar"
+  TARGET_NAME_AppImage: "XFreedom-Linux-x64-AppImage"
+  TARGET_NAME_deb: "XFreedom-Debian-x64"
   # TARGET_NAME_rpm: "Hiddify-rpm-x64"
   TARGET_NAME_apk: "XFreedom-Android"
   TARGET_NAME_aab: "XFreedom-Android"
